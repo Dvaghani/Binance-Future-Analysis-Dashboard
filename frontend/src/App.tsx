@@ -1,5 +1,6 @@
 import React from 'react';
 import { TradingProvider, useTrading } from './context/TradingContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { ConnectionModal } from './components/modals/ConnectionModal';
@@ -9,6 +10,7 @@ import { PerformancePage } from './pages/PerformancePage';
 import { TradesPage } from './pages/TradesPage';
 import { AssetsPage } from './pages/AssetsPage';
 import { LongShortPage } from './pages/LongShortPage';
+import { TimeAnalysisPage } from './pages/TimeAnalysisPage';
 import { BehaviorPage } from './pages/BehaviorPage';
 import { RiskPage } from './pages/RiskPage';
 import { MarketPage } from './pages/MarketPage';
@@ -31,6 +33,8 @@ const MainLayout: React.FC = () => {
         return <AssetsPage />;
       case 'long-short':
         return <LongShortPage />;
+      case 'time-analysis':
+        return <TimeAnalysisPage />;
       case 'behavior':
         return <BehaviorPage />;
       case 'risk':
@@ -47,7 +51,7 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
+    <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Sidebar */}
       <Sidebar />
 
@@ -61,10 +65,10 @@ const MainLayout: React.FC = () => {
             <div
               className={`p-3 rounded-xl shadow-lg border flex items-center gap-2.5 text-xs font-semibold ${
                 notification.type === 'success'
-                  ? 'bg-emerald-900 text-white border-emerald-800'
+                  ? 'bg-emerald-900/90 text-white border-emerald-700 backdrop-blur-sm'
                   : notification.type === 'error'
-                  ? 'bg-rose-900 text-white border-rose-800'
-                  : 'bg-slate-900 text-white border-slate-800'
+                  ? 'bg-rose-900/90 text-white border-rose-700 backdrop-blur-sm'
+                  : 'bg-slate-900/95 dark:bg-slate-800/95 text-white border-slate-800 dark:border-slate-700 backdrop-blur-sm'
               }`}
             >
               {notification.type === 'success' ? (
@@ -99,9 +103,11 @@ const MainLayout: React.FC = () => {
 
 export function App() {
   return (
-    <TradingProvider>
-      <MainLayout />
-    </TradingProvider>
+    <ThemeProvider>
+      <TradingProvider>
+        <MainLayout />
+      </TradingProvider>
+    </ThemeProvider>
   );
 }
 

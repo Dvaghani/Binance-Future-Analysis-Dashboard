@@ -5,6 +5,7 @@ import {
   History,
   Coins,
   ArrowLeftRight,
+  Clock,
   ShieldAlert,
   ShieldCheck,
   TrendingUp,
@@ -16,6 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useTrading } from '../../context/TradingContext';
+import { ThemeToggle } from '../common/ThemeToggle';
 
 interface NavItem {
   id: string;
@@ -30,6 +32,7 @@ const navItems: NavItem[] = [
   { id: 'trades', label: 'Trade Journal', icon: History },
   { id: 'assets', label: 'Asset Breakdown', icon: Coins },
   { id: 'long-short', label: 'Long vs Short', icon: ArrowLeftRight },
+  { id: 'time-analysis', label: 'Time Analysis', icon: Clock },
   { id: 'behavior', label: 'Trading Behavior', icon: ShieldAlert, badge: '8 Rules' },
   { id: 'risk', label: 'Risk & Drawdown', icon: ShieldCheck },
   { id: 'market', label: 'Market Context', icon: TrendingUp },
@@ -73,18 +76,18 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between h-screen sticky top-0 select-none z-20 no-print">
+    <aside className="w-64 bg-white dark:bg-[#0B0F17] border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between h-screen sticky top-0 select-none z-20 no-print transition-colors duration-200">
       {/* Brand Header */}
       <div>
-        <div className="h-16 flex items-center px-5 border-b border-slate-100 gap-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-sm">
-            <Sparkles className="w-4 h-4 text-emerald-400" />
+        <div className="h-16 flex items-center px-5 border-b border-slate-100 dark:border-slate-800/80 gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-600 dark:bg-emerald-950/80 dark:border dark:border-emerald-500/40 flex items-center justify-center text-white shadow-sm">
+            <Sparkles className="w-4 h-4 text-white dark:text-emerald-400" />
           </div>
           <div>
-            <span className="font-semibold text-sm tracking-tight text-slate-900 block leading-tight">
+            <span className="font-semibold text-sm tracking-tight text-slate-900 dark:text-white block leading-tight">
               Binance Futures
             </span>
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider block">
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
               Trading Intelligence
             </span>
           </div>
@@ -92,7 +95,7 @@ export const Sidebar: React.FC = () => {
 
         {/* Navigation Links */}
         <nav className="p-3 space-y-0.5">
-          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Analytics & Execution
           </div>
 
@@ -106,12 +109,12 @@ export const Sidebar: React.FC = () => {
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
                   isActive
-                    ? 'bg-slate-900 text-white shadow-sm font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    ? 'bg-emerald-50 dark:bg-slate-800/90 text-emerald-900 dark:text-emerald-400 border border-emerald-200/80 dark:border-slate-700/60 shadow-xs font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
                   <span>{item.label}</span>
                 </div>
 
@@ -119,8 +122,8 @@ export const Sidebar: React.FC = () => {
                   <span
                     className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                       isActive
-                        ? 'bg-slate-800 text-slate-200'
-                        : 'bg-slate-100 text-slate-600'
+                        ? 'bg-emerald-100 dark:bg-slate-700 text-emerald-800 dark:text-slate-200'
+                        : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border dark:border-slate-700/60'
                     }`}
                   >
                     {item.badge}
@@ -132,38 +135,38 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* Footer / Binance Connection Status */}
-      <div className="p-3 border-t border-slate-100 bg-slate-50/70">
-        <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-subtle mb-2">
+      {/* Footer / Binance Connection Status & Theme Toggle */}
+      <div className="p-3 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40">
+        <div className="p-3 rounded-lg bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-subtle mb-2">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
               <span
                 className={`w-2 h-2 rounded-full ${
                   isDemo
                     ? 'bg-amber-500 animate-pulse'
                     : status?.is_connected
                     ? 'bg-emerald-500'
-                    : 'bg-slate-300'
+                    : 'bg-slate-300 dark:bg-slate-600'
                 }`}
               />
               {isDemo ? 'Demo Mode' : status?.is_connected ? 'Binance Live' : 'Disconnected'}
             </span>
-            <span className="text-[10px] text-slate-600 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 font-medium">
+            <span className="text-[10px] text-slate-600 dark:text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-medium">
               READ-ONLY
             </span>
           </div>
 
-          <div className="text-[10px] text-slate-600 mb-2.5 font-medium flex items-center justify-between">
+          <div className="text-[10px] text-slate-600 dark:text-slate-400 mb-2.5 font-medium flex items-center justify-between">
             <span>Last sync:</span>
-            <span className="font-mono text-slate-700 font-semibold">{formatLastSync(status?.last_sync_time)}</span>
+            <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{formatLastSync(status?.last_sync_time)}</span>
           </div>
 
           <button
             onClick={syncNow}
             disabled={isSyncing}
-            className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded transition disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border dark:border-slate-700/50 text-xs font-medium rounded transition disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isSyncing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 dark:text-slate-400 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
           </button>
         </div>
@@ -171,16 +174,22 @@ export const Sidebar: React.FC = () => {
         {/* API Settings Button */}
         <button
           onClick={() => setIsConnectionModalOpen(true)}
-          className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition"
+          className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/80 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-700/80 transition mb-2"
         >
           <div className="flex items-center gap-2">
-            <KeyRound className="w-3.5 h-3.5 text-slate-400" />
+            <KeyRound className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
             <span>Binance API Keys</span>
           </div>
           {status?.is_connected && !isDemo && (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           )}
         </button>
+
+        {/* Compact Theme Switcher row in sidebar */}
+        <div className="flex items-center justify-between px-3 py-1 text-xs text-slate-500 dark:text-slate-400">
+          <span className="text-[11px] font-medium">Appearance</span>
+          <ThemeToggle compact />
+        </div>
       </div>
     </aside>
   );

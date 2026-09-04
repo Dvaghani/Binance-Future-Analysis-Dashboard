@@ -4,7 +4,7 @@ Performs 16+ core analytical calculations, 8 behavioral flaw detections,
 transparent risk scoring, and multi-timeframe equity curve modeling.
 """
 from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import pandas as pd
 from backend.database.models import Trade
@@ -45,6 +45,46 @@ def trades_to_df(trades: List[Trade]) -> pd.DataFrame:
     df["exit_time"] = pd.to_datetime(df["exit_time"])
     df = df.sort_values("exit_time").reset_index(drop=True)
     return df
+
+def compute_equity_and_drawdown(
+    df: pd.DataFrame,
+    current_balance: float = 10000.0,
+    unrealized_pnl: float = 0.0
+) -> Tuple[pd.DataFrame, float]:
+    """
+    Computes continuous account equity progression, peak equity, and drawdowns.
+    Incorporates starting equity as the initial baseline high-water mark so that early losses
+    are accurately captured. Accurately handles accounts of any capital size without an
+    artificial floor clamp.
+    """
+    current_equity = current_balance + unrealized_pnl
+    if df.empty:
+        return df, max(current_equity, 10.0)
+
+    df = df.sort_values("exit_time").reset_index(drop=True)
+    df["cumulative_net_pnl"] = df["net_pnl"].cumsum()
+
+    total_net_pnl = float(df["cumulative_net_pnl"].iloc[-1])
+    inferred_start = current_equity - total_net_pnl
+
+    if inferred_start > 0:
+        starting_equity = inferred_start
+    else:
+        # Fallback for accounts with past withdrawals: ensure starting equity cushions against liquidation
+        min_cum = float(df["cumulative_net_pnl"].min())
+        cushion = max(abs(min_cum) * 1.5, 10.0) if min_cum < 0 else 10.0
+        starting_equity = max(current_equity, cushion, 10.0)
+
+    df["equity"] = starting_equity + df["cumulative_net_pnl"]
+
+    # Incorporate starting_equity as the initial high-water mark
+    equity_with_start = pd.concat([pd.Series([starting_equity]), df["equity"]], ignore_index=True)
+    df["peak_equity"] = equity_with_start.cummax().iloc[1:].reset_index(drop=True)
+
+    df["drawdown"] = df["peak_equity"] - df["equity"]
+    df["drawdown_pct"] = (df["drawdown"] / df["peak_equity"]) * 100.0
+
+    return df, starting_equity
 
 # 1. Core KPIs
 def calculate_kpis(trades: List[Trade], current_balance: float = 10000.0, unrealized_pnl: float = 0.0) -> Dict[str, Any]:
@@ -102,13 +142,8 @@ def calculate_kpis(trades: List[Trade], current_balance: float = 10000.0, unreal
 
     average_trade = float(df["net_pnl"].mean())
 
-    # Drawdown calculation
-    df["cumulative_net_pnl"] = df["net_pnl"].cumsum()
-    starting_equity = max(1000.0, current_balance - net_pnl)
-    df["equity"] = starting_equity + df["cumulative_net_pnl"]
-    df["peak_equity"] = df["equity"].cummax()
-    df["drawdown"] = df["peak_equity"] - df["equity"]
-    df["drawdown_pct"] = (df["drawdown"] / df["peak_equity"]) * 100.0
+    # Drawdown and Equity calculation
+    df, starting_equity = compute_equity_and_drawdown(df, current_balance, unrealized_pnl)
 
     max_drawdown = float(df["drawdown"].max()) if not df.empty else 0.0
     max_drawdown_pct = float(df["drawdown_pct"].max()) if not df.empty else 0.0
@@ -140,7 +175,7 @@ def calculate_kpis(trades: List[Trade], current_balance: float = 10000.0, unreal
         "profit_factor": round(profit_factor, 2),
         "average_trade": round(average_trade, 2),
         "max_drawdown": round(max_drawdown, 2),
-        "max_drawdown_pct": round(max_drawdown_pct, 1),
+        "max_drawdown_pct": round(max_drawdown_pct, 2),
         "trajectory": trajectory,
         "total_fees": round(total_fees, 4),
         "total_funding": round(total_funding, 4),
@@ -178,17 +213,7 @@ def calculate_equity_curve(trades: List[Trade], timeframe: str = "ALL", current_
     if df.empty:
         return []
 
-    df = df.sort_values("exit_time").reset_index(drop=True)
-    df["cumulative_net_pnl"] = df["net_pnl"].cumsum()
-
-    # Anchor curve so the final point matches current_equity exactly
-    timeframe_pnl = float(df["cumulative_net_pnl"].iloc[-1])
-    starting_equity = current_equity - timeframe_pnl
-
-    df["equity"] = starting_equity + df["cumulative_net_pnl"]
-    df["peak_equity"] = df["equity"].cummax()
-    df["drawdown"] = df["peak_equity"] - df["equity"]
-    df["drawdown_pct"] = (df["drawdown"] / df["peak_equity"]) * 100.0
+    df, starting_equity = compute_equity_and_drawdown(df, current_balance, unrealized_pnl)
 
     # Downsample points if there are too many (e.g. > 150) for smooth rendering
     points = []
@@ -730,7 +755,7 @@ def calculate_behavioral_patterns(trades: List[Trade]) -> Dict[str, Any]:
     }
 
 # 8. Transparent Risk Score & Metrics
-def calculate_risk_analysis(trades: List[Trade], balance: float = 10000.0) -> Dict[str, Any]:
+def calculate_risk_analysis(trades: List[Trade], balance: float = 10000.0, unrealized_pnl: float = 0.0) -> Dict[str, Any]:
     df = trades_to_df(trades)
     if df.empty:
         return {
@@ -751,12 +776,7 @@ def calculate_risk_analysis(trades: List[Trade], balance: float = 10000.0) -> Di
         }
 
     net_pnl = float(df["net_pnl"].sum())
-    starting_equity = max(1000.0, balance - net_pnl)
-    df["cumulative_net_pnl"] = df["net_pnl"].cumsum()
-    df["equity"] = starting_equity + df["cumulative_net_pnl"]
-    df["peak_equity"] = df["equity"].cummax()
-    df["drawdown"] = df["peak_equity"] - df["equity"]
-    df["drawdown_pct"] = (df["drawdown"] / df["peak_equity"]) * 100.0
+    df, starting_equity = compute_equity_and_drawdown(df, balance, unrealized_pnl)
 
     max_dd = float(df["drawdown"].max())
     max_dd_pct = float(df["drawdown_pct"].max())
@@ -844,16 +864,16 @@ def calculate_risk_analysis(trades: List[Trade], balance: float = 10000.0) -> Di
         "risk_score": total_risk_score,
         "risk_tier": tier,
         "score_breakdown": {
-            "drawdown_health": {"score": round(dd_score, 1), "max": 25, "metric": f"{max_dd_pct:.1f}% Max DD"},
+            "drawdown_health": {"score": round(dd_score, 1), "max": 25, "metric": f"{max_dd_pct:.2f}% Max DD"},
             "leverage_discipline": {"score": round(lev_score, 1), "max": 25, "metric": f"{avg_leverage:.1f}x Avg Lev"},
             "position_concentration": {"score": round(conc_score, 1), "max": 20, "metric": f"{concentration_pct:.1f}% Max Size/Bal"},
             "behavioral_discipline": {"score": round(behavior_score, 1), "max": 15, "metric": f"{revenge_count} High-Risk Trades"},
             "expectancy_quality": {"score": round(pf_score, 1), "max": 15, "metric": f"{pf:.2f} Profit Factor"}
         },
         "max_drawdown": round(max_dd, 2),
-        "max_drawdown_pct": round(max_dd_pct, 1),
+        "max_drawdown_pct": round(max_dd_pct, 2),
         "current_drawdown": round(curr_dd, 2),
-        "current_drawdown_pct": round(curr_dd_pct, 1),
+        "current_drawdown_pct": round(curr_dd_pct, 2),
         "largest_position": round(largest_pos, 2),
         "avg_leverage": round(avg_leverage, 1),
         "max_leverage": max_leverage,
@@ -998,14 +1018,14 @@ def calculate_calendar(trades: List[Trade]) -> List[Dict[str, Any]]:
     return calendar
 
 # 13. Comprehensive Audit Report Generator (All 13 Sections)
-def generate_full_report(trades: List[Trade], balance: float = 10000.0) -> Dict[str, Any]:
-    kpis = calculate_kpis(trades, balance)
+def generate_full_report(trades: List[Trade], balance: float = 10000.0, unrealized_pnl: float = 0.0) -> Dict[str, Any]:
+    kpis = calculate_kpis(trades, balance, unrealized_pnl)
     long_short = calculate_long_short_performance(trades)
     assets = calculate_asset_performance(trades)
     time_analysis = calculate_time_analysis(trades)
     win_loss = calculate_winner_loser_stats(trades)
     behaviors = calculate_behavioral_patterns(trades)
-    risk = calculate_risk_analysis(trades, balance)
+    risk = calculate_risk_analysis(trades, balance, unrealized_pnl)
     fees = calculate_fees_and_funding(trades)
     regimes = calculate_market_regimes(trades)
     comparison = calculate_performance_comparison(trades)

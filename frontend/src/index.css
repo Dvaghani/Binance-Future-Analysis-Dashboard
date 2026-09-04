@@ -16,6 +16,22 @@
   --text-muted: #94A3B8;
   --color-gain: #059669;
   --color-loss: #E11D48;
+  --chart-grid: #F1F5F9;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg-primary: #0B0F17;
+  --bg-secondary: #090D16;
+  --bg-tertiary: #131B2E;
+  --border-subtle: #1E293B;
+  --border-hover: #334155;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --color-gain: #10B981;
+  --color-loss: #F43F5E;
+  --chart-grid: #1E293B;
 }
 
 body {
@@ -27,6 +43,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dark body {
+  background-color: #090D16;
+  color: #F1F5F9;
 }
 
 /* Tabular figures for numbers, currency, and percentages */
@@ -53,31 +75,53 @@ body {
   background: #94A3B8;
 }
 
+.dark ::-webkit-scrollbar-track {
+  background: #090D16;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Institutional Card Surfaces */
 .card-white {
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
-  transition: all 0.15s ease-in-out;
+  transition: background-color 0.2s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .card-white:hover {
   border-color: #CBD5E1;
 }
 
+.dark .card-white {
+  background: #0F172A;
+  border: 1px solid #1E293B;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+}
+
+.dark .card-white:hover {
+  border-color: #334155;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.2s ease-out forwards;
+  animation: fadeIn 0.15s ease-out;
 }
 
 /* Print CSS for Reports PDF Export */
@@ -93,6 +137,8 @@ body {
     display: block !important;
   }
   .card-white {
+    background: #FFFFFF !important;
+    color: #000000 !important;
     box-shadow: none !important;
     border: 1px solid #CBD5E1 !important;
     break-inside: avoid;

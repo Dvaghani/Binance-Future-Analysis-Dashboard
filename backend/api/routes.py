@@ -156,7 +156,7 @@ def get_overview(db: Session = Depends(get_db)):
     kpis = calculate_kpis(trades, cfg.account_balance, cfg.unrealized_pnl or 0.0)
     long_short = calculate_long_short_performance(trades)
     assets = calculate_asset_performance(trades)
-    risk = calculate_risk_analysis(trades, cfg.account_balance)
+    risk = calculate_risk_analysis(trades, cfg.account_balance, cfg.unrealized_pnl or 0.0)
     behaviors = calculate_behavioral_patterns(trades)
 
     return {
@@ -182,6 +182,7 @@ def get_trades(
     symbol: Optional[str] = None,
     side: Optional[str] = None,
     outcome: Optional[str] = None,
+    date: Optional[str] = None,
     search: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=200),
@@ -200,9 +201,31 @@ def get_trades(
             query = query.filter(Trade.net_pnl > 0)
         elif normalized in ("LOSS", "LOSER", "LOSERS"):
             query = query.filter(Trade.net_pnl <= 0)
+    if date and date.strip():
+        try:
+            d = datetime.strptime(date.strip(), "%Y-%m-%d")
+            start_dt = datetime(d.year, d.month, d.day, 0, 0, 0)
+            end_dt = datetime(d.year, d.month, d.day, 23, 59, 59, 999999)
+            query = query.filter(Trade.exit_time >= start_dt, Trade.exit_time <= end_dt)
+        except Exception:
+            pass
     if search:
-        s = f"%{search.strip()}%"
-        query = query.filter(Trade.symbol.ilike(s) | Trade.notes.ilike(s) | Trade.behavioral_flags.ilike(s))
+        search_term = search.strip()
+        s = f"%{search_term}%"
+        date_matched = False
+        try:
+            d = datetime.strptime(search_term, "%Y-%m-%d")
+            start_dt = datetime(d.year, d.month, d.day, 0, 0, 0)
+            end_dt = datetime(d.year, d.month, d.day, 23, 59, 59, 999999)
+            query = query.filter(
+                Trade.symbol.ilike(s) | Trade.notes.ilike(s) | Trade.behavioral_flags.ilike(s) |
+                ((Trade.exit_time >= start_dt) & (Trade.exit_time <= end_dt))
+            )
+            date_matched = True
+        except Exception:
+            pass
+        if not date_matched:
+            query = query.filter(Trade.symbol.ilike(s) | Trade.notes.ilike(s) | Trade.behavioral_flags.ilike(s))
 
     total = query.count()
     items = query.order_by(Trade.exit_time.desc()).offset((page - 1) * page_size).limit(page_size).all()
@@ -303,7 +326,7 @@ def get_behavior_endpoint(db: Session = Depends(get_db)):
 def get_risk_endpoint(db: Session = Depends(get_db)):
     cfg = get_config(db)
     trades = get_active_trades(db, cfg.is_demo_mode)
-    return calculate_risk_analysis(trades, cfg.account_balance)
+    return calculate_risk_analysis(trades, cfg.account_balance, cfg.unrealized_pnl or 0.0)
 
 @router.get("/fees")
 def get_fees_endpoint(db: Session = Depends(get_db)):
@@ -339,7 +362,7 @@ def get_calendar_endpoint(db: Session = Depends(get_db)):
 def get_report_endpoint(db: Session = Depends(get_db)):
     cfg = get_config(db)
     trades = get_active_trades(db, cfg.is_demo_mode)
-    return generate_full_report(trades, cfg.account_balance)
+    return generate_full_report(trades, cfg.account_balance, cfg.unrealized_pnl or 0.0)
 
 @router.post("/demo/reset")
 def reset_demo_data(db: Session = Depends(get_db)):

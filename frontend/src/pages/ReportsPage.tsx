@@ -50,13 +50,13 @@ export const ReportsPage: React.FC = () => {
       {/* Top Export Bar (Hidden on Print) */}
       <div className="card-white p-4 flex items-center justify-between no-print">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Trading Intelligence Audit Report</h2>
-          <p className="text-xs text-slate-400">Generated {report.generated_at}</p>
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Trading Intelligence Audit Report</h2>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Generated {report.generated_at}</p>
         </div>
 
         <button
           onClick={handlePrint}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-sm transition"
         >
           <Printer className="w-4 h-4" />
           <span>Export / Print to PDF</span>
@@ -64,82 +64,82 @@ export const ReportsPage: React.FC = () => {
       </div>
 
       {/* Printable Report Document Body */}
-      <div className="card-white p-8 space-y-8 bg-white print:p-0 print:border-none print:shadow-none">
+      <div className="card-white p-8 space-y-8 bg-white dark:bg-slate-900 dark:border-slate-800 print:bg-white print:p-0 print:border-none print:shadow-none">
         {/* Document Header */}
-        <div className="border-b border-slate-200 pb-6">
+        <div className="border-b border-slate-200 dark:border-slate-800 pb-6">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block">
                 Official Account Audit
               </span>
-              <h1 className="text-2xl font-bold text-slate-900 mt-1">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
                 Personal Binance Futures Trading Report
               </h1>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Comprehensive evaluation of profitability, directional bias, psychology, and risk exposure.
               </p>
             </div>
-            <div className="text-right text-xs font-mono text-slate-500">
+            <div className="text-right text-xs font-mono text-slate-500 dark:text-slate-400">
               <div>Date: {report.generated_at}</div>
-              <div className="text-emerald-600 font-semibold font-sans mt-0.5">Verified Read-Only</div>
+              <div className="text-emerald-600 dark:text-emerald-400 font-semibold font-sans mt-0.5">Verified Read-Only</div>
             </div>
           </div>
         </div>
 
         {/* Section 1 & 2: Overall Performance & PNL Overview */}
         <div>
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
             1 & 2. Overall Performance & PNL Overview
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-sans block">Total Net Realized PNL</span>
-              <span className={`text-base font-bold ${kpis.net_pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Total Net Realized PNL</span>
+              <span className={`text-base font-bold ${kpis.net_pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                 {formatPNL(kpis.net_pnl, 2)}
               </span>
             </div>
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-sans block">Win Rate</span>
-              <span className="text-base font-bold text-slate-900">{kpis.win_rate}%</span>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Win Rate</span>
+              <span className="text-base font-bold text-slate-900 dark:text-white">{kpis.win_rate}%</span>
             </div>
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-sans block">Profit Factor</span>
-              <span className="text-base font-bold text-slate-900">{kpis.profit_factor.toFixed(2)}</span>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Profit Factor</span>
+              <span className="text-base font-bold text-slate-900 dark:text-white">{kpis.profit_factor.toFixed(2)}</span>
             </div>
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-sans block">Account ROI</span>
-              <span className="text-base font-bold text-emerald-600">+{kpis.roi_pct}%</span>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Account ROI</span>
+              <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">+{kpis.roi_pct}%</span>
             </div>
           </div>
         </div>
 
         {/* Section 4: Long vs Short Directional Edge */}
         <div>
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
             4. Long vs Short Directional Edge
           </h3>
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-3 text-xs font-medium text-slate-800">
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-lg mb-3 text-xs font-medium text-slate-800 dark:text-slate-200">
             {ls.insight}
           </div>
           <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-            <div className="p-3.5 border border-slate-200 rounded-lg">
-              <span className="font-bold font-sans text-slate-900 block mb-2">LONG Performance</span>
+            <div className="p-3.5 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="font-bold font-sans text-slate-900 dark:text-white block mb-2">LONG Performance</span>
               <div className="space-y-1">
-                <div className="flex justify-between"><span>PNL:</span><span className="font-bold text-emerald-600">{formatPNL(ls.long.pnl, 2)}</span></div>
-                <div className="flex justify-between"><span>Win Rate:</span><span>{ls.long.win_rate}%</span></div>
-                <div className="flex justify-between"><span>Profit Factor:</span><span>{ls.long.profit_factor.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Avg Winner:</span><span>{formatPNL(ls.long.avg_winner, 2)}</span></div>
-                <div className="flex justify-between"><span>Avg Loser:</span><span>{formatPNL(-Math.abs(ls.long.avg_loser), 2)}</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>PNL:</span><span className="font-bold text-emerald-600 dark:text-emerald-400">{formatPNL(ls.long.pnl, 2)}</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Win Rate:</span><span className="text-slate-900 dark:text-slate-200">{ls.long.win_rate}%</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Profit Factor:</span><span className="text-slate-900 dark:text-slate-200">{ls.long.profit_factor.toFixed(2)}</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Avg Winner:</span><span className="text-slate-900 dark:text-slate-200">{formatPNL(ls.long.avg_winner, 2)}</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Avg Loser:</span><span className="text-slate-900 dark:text-slate-200">{formatPNL(-Math.abs(ls.long.avg_loser), 2)}</span></div>
               </div>
             </div>
-            <div className="p-3.5 border border-slate-200 rounded-lg">
-              <span className="font-bold font-sans text-slate-900 block mb-2">SHORT Performance</span>
+            <div className="p-3.5 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="font-bold font-sans text-slate-900 dark:text-white block mb-2">SHORT Performance</span>
               <div className="space-y-1">
-                <div className="flex justify-between"><span>PNL:</span><span className="font-bold text-rose-600">{formatPNL(ls.short.pnl, 2)}</span></div>
-                <div className="flex justify-between"><span>Win Rate:</span><span>{ls.short.win_rate}%</span></div>
-                <div className="flex justify-between"><span>Profit Factor:</span><span>{ls.short.profit_factor.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Avg Winner:</span><span>{formatPNL(ls.short.avg_winner, 2)}</span></div>
-                <div className="flex justify-between"><span>Avg Loser:</span><span>{formatPNL(-Math.abs(ls.short.avg_loser), 2)}</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>PNL:</span><span className="font-bold text-rose-600 dark:text-rose-400">{formatPNL(ls.short.pnl, 2)}</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Win Rate:</span><span className="text-slate-900 dark:text-slate-200">{ls.short.win_rate}%</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Profit Factor:</span><span className="text-slate-900 dark:text-slate-200">{ls.short.profit_factor.toFixed(2)}</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Avg Winner:</span><span className="text-slate-900 dark:text-slate-200">{formatPNL(ls.short.avg_winner, 2)}</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Avg Loser:</span><span className="text-slate-900 dark:text-slate-200">{formatPNL(-Math.abs(ls.short.avg_loser), 2)}</span></div>
               </div>
             </div>
           </div>
@@ -147,22 +147,22 @@ export const ReportsPage: React.FC = () => {
 
         {/* Section 5: Asset Breakdown */}
         <div>
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
             5. Asset Breakdown (Key Drivers vs Draggers)
           </h3>
           <div className="grid grid-cols-2 gap-4 text-xs font-mono mb-3">
             {report.asset_performance.top_driver && (
-              <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-lg">
-                <span className="text-[10px] font-sans font-semibold text-emerald-800 uppercase block">Top Profit Driver</span>
-                <div className="text-sm font-bold font-sans text-slate-900 mt-1">{report.asset_performance.top_driver.symbol}</div>
-                <div className="text-emerald-600 font-bold mt-0.5">{formatPNL(report.asset_performance.top_driver.net_pnl, 2)} ({report.asset_performance.top_driver.win_rate}% WR)</div>
+              <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 rounded-lg">
+                <span className="text-[10px] font-sans font-semibold text-emerald-800 dark:text-emerald-300 uppercase block">Top Profit Driver</span>
+                <div className="text-sm font-bold font-sans text-slate-900 dark:text-white mt-1">{report.asset_performance.top_driver.symbol}</div>
+                <div className="text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">{formatPNL(report.asset_performance.top_driver.net_pnl, 2)} ({report.asset_performance.top_driver.win_rate}% WR)</div>
               </div>
             )}
             {report.asset_performance.top_dragger && (
-              <div className="p-3 bg-rose-50/50 border border-rose-200 rounded-lg">
-                <span className="text-[10px] font-sans font-semibold text-rose-800 uppercase block">Top Performance Drag</span>
-                <div className="text-sm font-bold font-sans text-slate-900 mt-1">{report.asset_performance.top_dragger.symbol}</div>
-                <div className="text-rose-600 font-bold mt-0.5">{formatPNL(report.asset_performance.top_dragger.net_pnl, 2)} ({report.asset_performance.top_dragger.win_rate}% WR)</div>
+              <div className="p-3 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/60 rounded-lg">
+                <span className="text-[10px] font-sans font-semibold text-rose-800 dark:text-rose-300 uppercase block">Top Performance Drag</span>
+                <div className="text-sm font-bold font-sans text-slate-900 dark:text-white mt-1">{report.asset_performance.top_dragger.symbol}</div>
+                <div className="text-rose-600 dark:text-rose-400 font-bold mt-0.5">{formatPNL(report.asset_performance.top_dragger.net_pnl, 2)} ({report.asset_performance.top_dragger.win_rate}% WR)</div>
               </div>
             )}
           </div>
@@ -170,48 +170,50 @@ export const ReportsPage: React.FC = () => {
 
         {/* Section 6 & 7: Risk & Drawdown */}
         <div>
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
             6 & 7. Risk & Drawdown Assessment
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
-            <div className="p-3 border border-slate-200 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-sans block">Overall Risk Score</span>
-              <span className="text-base font-bold text-slate-900">{risk.risk_score} / 100</span>
-              <span className="text-[10px] text-emerald-600 font-sans block mt-0.5">{risk.risk_tier}</span>
+            <div className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Overall Risk Score</span>
+              <span className="text-base font-bold text-slate-900 dark:text-white">{risk.risk_score} / 100</span>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-sans block mt-0.5">{risk.risk_tier}</span>
             </div>
-            <div className="p-3 border border-slate-200 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-sans block">Maximum Drawdown</span>
-              <span className="text-base font-bold text-rose-600">-{risk.max_drawdown_pct}%</span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">${risk.max_drawdown.toFixed(2)} drop</span>
+            <div className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Maximum Drawdown</span>
+              <span className="text-base font-bold text-rose-600 dark:text-rose-400">
+                {risk.max_drawdown_pct > 0 ? `-${risk.max_drawdown_pct.toFixed(2)}%` : '0.00%'}
+              </span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">${risk.max_drawdown.toFixed(2)} drop</span>
             </div>
-            <div className="p-3 border border-slate-200 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-sans block">Average Leverage</span>
-              <span className="text-base font-bold text-slate-900">{risk.avg_leverage}x</span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Max used: {risk.max_leverage}x</span>
+            <div className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Average Leverage</span>
+              <span className="text-base font-bold text-slate-900 dark:text-white">{risk.avg_leverage}x</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">Max used: {risk.max_leverage}x</span>
             </div>
-            <div className="p-3 border border-slate-200 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-sans block">Max Position Size</span>
-              <span className="text-base font-bold text-slate-900">${risk.largest_position.toLocaleString()}</span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">{risk.position_concentration_pct}% of balance</span>
+            <div className="p-3 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block">Max Position Size</span>
+              <span className="text-base font-bold text-slate-900 dark:text-white">${risk.largest_position.toLocaleString()}</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">{risk.position_concentration_pct}% of balance</span>
             </div>
           </div>
         </div>
 
         {/* Section 8: Behavioral Flaw Audit */}
         <div>
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
             8. Trading Behavior & Flaw Audit
           </h3>
           <div className="space-y-2 text-xs">
             {report.trading_behavior.behaviors.map((b) => (
-              <div key={b.key} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+              <div key={b.key} className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-lg flex items-center justify-between">
                 <div>
-                  <span className="font-semibold text-slate-900">{b.title}</span>
-                  <p className="text-[11px] text-slate-500">{b.description}</p>
+                  <span className="font-semibold text-slate-900 dark:text-white">{b.title}</span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{b.description}</p>
                 </div>
                 <div className="text-right font-mono shrink-0 pl-4">
-                  <span className="text-slate-800 font-bold block">{b.count} events</span>
-                  <span className="text-rose-600 text-[11px]">{b.cost > 0 ? `-${formatFee(b.cost)}` : '$0'}</span>
+                  <span className="text-slate-800 dark:text-slate-200 font-bold block">{b.count} events</span>
+                  <span className="text-rose-600 dark:text-rose-400 text-[11px]">{b.cost > 0 ? `-${formatFee(b.cost)}` : '$0'}</span>
                 </div>
               </div>
             ))}
@@ -220,14 +222,14 @@ export const ReportsPage: React.FC = () => {
 
         {/* Section 10: Fees and Funding Drag */}
         <div>
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
             10. Fees and Funding Drag
           </h3>
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono space-y-1.5">
-            <div className="flex justify-between"><span>Gross Realized PNL:</span><span className="font-bold text-slate-900">${fees.gross_pnl.toFixed(2)}</span></div>
-            <div className="flex justify-between text-rose-600"><span>Trading Commissions Paid:</span><span>-{formatFee(fees.total_fees)} ({fees.fees_pct_gross}% of gross)</span></div>
-            <div className="flex justify-between text-slate-600"><span>Net Funding Transfers:</span><span>{fees.net_funding >= 0 ? '+' : ''}{formatFee(fees.net_funding)}</span></div>
-            <div className="border-t border-slate-200 pt-1.5 flex justify-between font-bold text-slate-900">
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono space-y-1.5">
+            <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Gross Realized PNL:</span><span className="font-bold text-slate-900 dark:text-white">${fees.gross_pnl.toFixed(2)}</span></div>
+            <div className="flex justify-between text-rose-600 dark:text-rose-400"><span>Trading Commissions Paid:</span><span>-{formatFee(fees.total_fees)} ({fees.fees_pct_gross}% of gross)</span></div>
+            <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Net Funding Transfers:</span><span>{fees.net_funding >= 0 ? '+' : ''}{formatFee(fees.net_funding)}</span></div>
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-1.5 flex justify-between font-bold text-slate-900 dark:text-white">
               <span>Net Realized PNL:</span><span>${fees.net_pnl.toFixed(2)}</span>
             </div>
           </div>
@@ -236,12 +238,12 @@ export const ReportsPage: React.FC = () => {
         {/* Section 11, 12, 13: Strengths, Weaknesses, and Actionable Improvements */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
           {/* Strengths */}
-          <div className="p-4 bg-emerald-50/40 border border-emerald-200 rounded-lg text-xs">
-            <span className="font-bold text-emerald-900 flex items-center gap-1.5 mb-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <div className="p-4 bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 rounded-lg text-xs">
+            <span className="font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5 mb-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               11. Key Strengths
             </span>
-            <ul className="space-y-1.5 text-emerald-950">
+            <ul className="space-y-1.5 text-emerald-950 dark:text-emerald-200">
               {report.strengths.map((s, idx) => (
                 <li key={idx} className="flex items-start gap-1.5">
                   <span className="text-emerald-500 font-bold">•</span>
@@ -252,12 +254,12 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           {/* Weaknesses */}
-          <div className="p-4 bg-rose-50/40 border border-rose-200 rounded-lg text-xs">
-            <span className="font-bold text-rose-900 flex items-center gap-1.5 mb-2">
-              <AlertCircle className="w-4 h-4 text-rose-600" />
+          <div className="p-4 bg-rose-50/40 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/60 rounded-lg text-xs">
+            <span className="font-bold text-rose-900 dark:text-rose-300 flex items-center gap-1.5 mb-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
               12. Key Weaknesses
             </span>
-            <ul className="space-y-1.5 text-rose-950">
+            <ul className="space-y-1.5 text-rose-950 dark:text-rose-200">
               {report.weaknesses.map((w, idx) => (
                 <li key={idx} className="flex items-start gap-1.5">
                   <span className="text-rose-500 font-bold">•</span>
@@ -268,12 +270,12 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           {/* Actionable Improvements */}
-          <div className="p-4 bg-indigo-50/40 border border-indigo-200 rounded-lg text-xs">
-            <span className="font-bold text-indigo-900 flex items-center gap-1.5 mb-2">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
+          <div className="p-4 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800/60 rounded-lg text-xs">
+            <span className="font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5 mb-2">
+              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               13. Actionable Rules
             </span>
-            <ul className="space-y-1.5 text-indigo-950">
+            <ul className="space-y-1.5 text-indigo-950 dark:text-indigo-200">
               {report.actionable_improvements.map((a, idx) => (
                 <li key={idx} className="flex items-start gap-1.5">
                   <span className="text-indigo-500 font-bold">•</span>

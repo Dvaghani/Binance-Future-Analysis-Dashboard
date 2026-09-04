@@ -25,7 +25,34 @@ const TradingContext = createContext<TradingContextType | undefined>(undefined);
 
 export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [status, setStatus] = useState<AccountStatus | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTabState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '');
+      const valid = ['overview', 'performance', 'trades', 'assets', 'long-short', 'time-analysis', 'behavior', 'risk', 'market', 'calendar', 'reports'];
+      if (valid.includes(hash)) return hash;
+    }
+    return 'overview';
+  });
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      window.location.hash = tab;
+    }
+  };
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      const valid = ['overview', 'performance', 'trades', 'assets', 'long-short', 'time-analysis', 'behavior', 'risk', 'market', 'calendar', 'reports'];
+      if (valid.includes(hash)) {
+        setActiveTabState(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   const [isConnectionModalOpen, setIsConnectionModalOpen] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [notification, setNotification] = useState<NotificationState | null>(null);

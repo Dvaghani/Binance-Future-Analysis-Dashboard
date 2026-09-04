@@ -83,6 +83,7 @@ export const api = {
     symbol?: string;
     side?: string;
     outcome?: string;
+    date?: string;
     search?: string;
     page?: number;
     page_size?: number;
@@ -91,6 +92,7 @@ export const api = {
     if (params.symbol) query.set('symbol', params.symbol);
     if (params.side) query.set('side', params.side);
     if (params.outcome) query.set('outcome', params.outcome);
+    if (params.date) query.set('date', params.date);
     if (params.search) query.set('search', params.search);
     if (params.page) query.set('page', params.page.toString());
     if (params.page_size) query.set('page_size', params.page_size.toString());

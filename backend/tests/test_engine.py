@@ -86,5 +86,61 @@ class TestAnalyticsEngine(unittest.TestCase):
         self.assertIn("equity", curve_all[0])
         self.assertIn("drawdown", curve_all[0])
 
+    def test_sub_thousand_account_drawdown(self):
+        # A $100 account with a $10 loss should have a ~9-10% drawdown, NOT ~1%
+        trade1 = Trade(
+            id="t1",
+            symbol="BTCUSDT",
+            side="LONG",
+            entry_time=datetime(2026, 1, 1, 10, 0),
+            exit_time=datetime(2026, 1, 1, 11, 0),
+            entry_price=100.0,
+            exit_price=90.0,
+            quantity=1.0,
+            position_value=100.0,
+            leverage=1,
+            gross_pnl=-10.0,
+            pnl_percentage=-10.0,
+            commission=0.0,
+            funding_fees=0.0,
+            net_pnl=-10.0,
+            duration_seconds=3600,
+            is_winner=False
+        )
+        # current_balance = 90 (started with 100, lost 10)
+        kpis = calculate_kpis([trade1], current_balance=90.0, unrealized_pnl=0.0)
+        self.assertEqual(kpis["max_drawdown"], 10.0)
+        # Starting equity is 100, drop to 90 -> 10%
+        self.assertAlmostEqual(kpis["max_drawdown_pct"], 10.0, delta=0.5)
+
+        risk = calculate_risk_analysis([trade1], balance=90.0, unrealized_pnl=0.0)
+        self.assertEqual(risk["max_drawdown"], 10.0)
+        self.assertAlmostEqual(risk["max_drawdown_pct"], 10.0, delta=0.5)
+
+    def test_initial_loss_counts_towards_drawdown(self):
+        trade1 = Trade(
+            id="t1",
+            symbol="ETHUSDT",
+            side="LONG",
+            entry_time=datetime(2026, 1, 1, 10, 0),
+            exit_time=datetime(2026, 1, 1, 11, 0),
+            entry_price=100.0,
+            exit_price=95.0,
+            quantity=1.0,
+            position_value=100.0,
+            leverage=1,
+            gross_pnl=-5.0,
+            pnl_percentage=-5.0,
+            commission=0.0,
+            funding_fees=0.0,
+            net_pnl=-5.0,
+            duration_seconds=3600,
+            is_winner=False
+        )
+        curve = calculate_equity_curve([trade1], "ALL", current_balance=95.0)
+        self.assertEqual(len(curve), 1)
+        self.assertEqual(curve[0]["drawdown"], 5.0)
+        self.assertAlmostEqual(curve[0]["drawdown_pct"], 5.0, delta=0.1)
+
 if __name__ == "__main__":
     unittest.main()

@@ -28,4 +28,6 @@ npm run dev
 ---
 
 ## One-Click Launcher (Windows)
-Double-click `start.bat` in the project root to start both backend and frontend simultaneously.
+- **Start**: Double-click `start.bat` in the project root to start both backend and frontend simultaneously.
+- **Stop**: Double-click `stop.bat` in the project root to cleanly stop both services.
+
