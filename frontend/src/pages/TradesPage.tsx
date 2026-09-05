@@ -557,20 +557,22 @@ export const TradesPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider">
                 <tr>
-                  <th className="py-3 px-3">Date / Time</th>
-                  <th className="py-3 px-3">Symbol</th>
-                  <th className="py-3 px-3">Side</th>
-                  <th className="py-3 px-3">Entry</th>
-                  <th className="py-3 px-3">Exit</th>
-                  <th className="py-3 px-3">Size ($)</th>
-                  <th className="py-3 px-3">Leverage</th>
-                  <th className="py-3 px-3">Net PNL</th>
-                  <th className="py-3 px-3">Fee / Funding</th>
-                  <th className="py-3 px-3">PNL %</th>
-                  <th className="py-3 px-3">Duration</th>
-                  <th className="py-3 px-3">Result</th>
-                  <th className="py-3 px-3">Flags</th>
-                  <th className="py-3 px-3 text-right">Actions</th>
+                  <th className="py-2.5 px-2.5">Date / Time</th>
+                  <th className="py-2.5 px-2.5">Symbol</th>
+                  <th className="py-2.5 px-2">Side</th>
+                  <th className="py-2.5 px-2.5">Entry</th>
+                  <th className="py-2.5 px-2.5">Exit</th>
+                  <th className="py-2.5 px-2.5">Size ($)</th>
+                  <th className="py-2.5 px-2">Leverage</th>
+                  <th className="py-2.5 px-2.5">Net PNL</th>
+                  <th className="py-2.5 px-2">Fee / Funding</th>
+                  <th className="py-2.5 px-2">PNL %</th>
+                  <th className="py-2.5 px-2">Duration</th>
+                  <th className="py-2.5 px-2">Result</th>
+                  <th className="py-2.5 px-2">Flags</th>
+                  <th className="py-2.5 px-3 text-right sticky right-0 z-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.4)]">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
@@ -613,12 +615,12 @@ export const TradesPage: React.FC = () => {
                       <tr
                         key={trade.id}
                         onClick={() => setSelectedTrade(trade)}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 cursor-pointer transition"
+                        className="group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 cursor-pointer transition"
                       >
-                        <td className="py-3 px-4 font-sans text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                        <td className="py-2.5 px-2.5 font-sans text-slate-500 dark:text-slate-400 whitespace-nowrap">
                           {trade.exit_time}
                         </td>
-                        <td className="py-3 px-4 font-sans font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                        <td className="py-2.5 px-2.5 font-sans font-bold text-slate-900 dark:text-white whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <span>{trade.symbol}</span>
                             {trade.account_name && (
@@ -628,9 +630,9 @@ export const TradesPage: React.FC = () => {
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
+                        <td className="py-2.5 px-2 whitespace-nowrap">
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded font-sans inline-flex items-center gap-0.5 ${
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-sans inline-flex items-center gap-0.5 ${
                               isLong
                                 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60'
                                 : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60'
@@ -640,24 +642,24 @@ export const TradesPage: React.FC = () => {
                             {trade.side}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 tabular-nums">
+                        <td className="py-2.5 px-2.5 text-slate-700 dark:text-slate-300 tabular-nums">
                           ${trade.entry_price.toLocaleString()}
                         </td>
-                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 tabular-nums">
+                        <td className="py-2.5 px-2.5 text-slate-700 dark:text-slate-300 tabular-nums">
                           ${trade.exit_price.toLocaleString()}
                         </td>
-                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 tabular-nums">
+                        <td className="py-2.5 px-2.5 text-slate-700 dark:text-slate-300 tabular-nums">
                           ${trade.position_value.toLocaleString()}
                         </td>
-                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400">{trade.leverage}x</td>
+                        <td className="py-2.5 px-2 text-slate-500 dark:text-slate-400">{trade.leverage}x</td>
                         <td
-                          className={`py-3 px-3 font-bold tabular-nums ${
+                          className={`py-2.5 px-2.5 font-bold tabular-nums ${
                             isWin ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                           }`}
                         >
                           {formatPNL(trade.net_pnl, 2)}
                         </td>
-                        <td className="py-3 px-3 font-mono text-[11px] whitespace-nowrap leading-tight">
+                        <td className="py-2.5 px-2 font-mono text-[10px] whitespace-nowrap leading-tight">
                           <div className="text-rose-600 dark:text-rose-400 font-semibold">
                             Fee: -{formatFee(trade.commission)}
                           </div>
@@ -672,18 +674,18 @@ export const TradesPage: React.FC = () => {
                           </div>
                         </td>
                         <td
-                          className={`py-3 px-3 tabular-nums ${
+                          className={`py-2.5 px-2 tabular-nums ${
                             isWin ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                           }`}
                         >
                           {isWin ? '+' : ''}{trade.pnl_percentage.toFixed(1)}%
                         </td>
-                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-sans text-[11px] whitespace-nowrap">
+                        <td className="py-2.5 px-2 text-slate-500 dark:text-slate-400 font-sans text-[11px] whitespace-nowrap">
                           {trade.duration_formatted}
                         </td>
-                        <td className="py-3 px-4 whitespace-nowrap font-sans">
+                        <td className="py-2.5 px-2 whitespace-nowrap font-sans">
                           <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
                               isWin
                                 ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
                                 : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
@@ -692,7 +694,7 @@ export const TradesPage: React.FC = () => {
                             {isWin ? 'WIN' : 'LOSS'}
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-sans whitespace-nowrap">
+                        <td className="py-2.5 px-2 font-sans whitespace-nowrap">
                           {trade.behavioral_flags.length > 0 ? (
                             <span className="text-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 px-1.5 py-0.5 rounded font-medium">
                               {trade.behavioral_flags[0].replace('_', ' ')}
@@ -702,7 +704,10 @@ export const TradesPage: React.FC = () => {
                             <span className="text-slate-300 dark:text-slate-600 text-[11px]">—</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-right whitespace-nowrap font-sans" onClick={(e) => e.stopPropagation()}>
+                        <td
+                          className="py-2.5 px-3 text-right whitespace-nowrap font-sans sticky right-0 z-10 bg-white dark:bg-[#0B0F17] group-hover:bg-slate-50 dark:group-hover:bg-slate-800/80 border-l border-slate-100 dark:border-slate-800/60 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.4)]"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <button
                             type="button"
                             onClick={() => setChartTradeId(trade.id)}
