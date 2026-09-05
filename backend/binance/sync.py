@@ -3,16 +3,25 @@ Synchronization and Ingestion Pipeline for Binance Futures.
 Fetches fills and income records via read-only API, stores them idempotently,
 and reconstructs round-trip positions using a FIFO matching engine.
 """
+import time
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Set
+from typing import Dict, Any, List, Set, Optional
 from sqlalchemy.orm import Session
 
 from backend.binance.client import BinanceFuturesClient
-from backend.database.models import AccountConfig, RawFill, IncomeItem, Trade
+from backend.database.models import Account, AccountConfig, RawFill, IncomeItem, Trade
 
-def sync_binance_data(db: Session, api_key: str, api_secret: str) -> Dict[str, Any]:
+def sync_binance_data(
+    db: Session,
+    api_key: str,
+    api_secret: str,
+    account_id: Optional[int] = None,
+    lookback_days: int = 30
+) -> Dict[str, Any]:
     """
     Executes incremental read-only sync from Binance Futures.
+    Supports lookback periods up to 90 days (Binance REST API max limit)
+    using sequential 7-day sliding windows (Binance max time-span per userTrades call).
     Ensures in-memory batch deduplication and safe rollback on error.
     """
     # 0. Clean session rollback to ensure no broken transactions linger
@@ -36,128 +45,173 @@ def sync_binance_data(db: Session, api_key: str, api_secret: str) -> Dict[str, A
     config.account_balance = balance
     config.unrealized_pnl = unrealized
     config.last_sync_time = datetime.now(timezone.utc)
+    if account_id:
+        config.active_account_id = account_id
+
+    # Update specific Account if provided
+    if account_id:
+        acc = db.query(Account).filter(Account.id == account_id).first()
+        if acc:
+            acc.api_key_masked = config.api_key_masked
+            acc.is_connected = True
+            acc.account_balance = balance
+            acc.unrealized_pnl = unrealized
+            acc.last_sync_time = config.last_sync_time
+            acc.is_active = True
     db.commit()
 
-    # 2. Fetch income records (funding fees & commissions)
+    # Clamp lookback_days between 1 and 90 (Binance REST API hard limit)
+    lookback_days = max(1, min(int(lookback_days or 30), 90))
+    now_ms = int(time.time() * 1000)
+    start_ms = now_ms - (lookback_days * 24 * 60 * 60 * 1000)
+
+    # Build 7-day sliding time windows (Binance /fapi/v1/userTrades max window is 7 days)
+    seven_days_ms = 7 * 24 * 60 * 60 * 1000
+    windows: List[tuple[int, int]] = []
+    w_start = start_ms
+    while w_start < now_ms:
+        w_end = min(w_start + seven_days_ms, now_ms)
+        windows.append((w_start, w_end))
+        w_start = w_end
+
+    # 2. Fetch income records across all sliding windows
     raw_income: List[Dict[str, Any]] = []
     new_income_count = 0
-    try:
-        raw_income = client.get_income_history(limit=1000)
-        existing_income_ids: Set[str] = set(r[0] for r in db.query(IncomeItem.id).all())
-        seen_income_ids: Set[str] = set(existing_income_ids)
+    existing_income_ids_q = db.query(IncomeItem.id)
+    if account_id is not None:
+        existing_income_ids_q = existing_income_ids_q.filter(IncomeItem.account_id == account_id)
+    existing_income_ids: Set[str] = set(r[0] for r in existing_income_ids_q.all())
+    seen_income_ids: Set[str] = set(existing_income_ids)
 
-        for item in raw_income:
-            tran_id = str(item.get("tranId", ""))
-            inc_type = str(item.get("incomeType", ""))
-            asset = str(item.get("asset", "USDT"))
-            trade_id = str(item.get("tradeId", ""))
+    for (win_start, win_end) in windows:
+        try:
+            batch_income = client.get_income_history(start_time=win_start, end_time=win_end, limit=1000)
+            for item in batch_income:
+                raw_income.append(item)
+                tran_id = str(item.get("tranId", ""))
+                inc_type = str(item.get("incomeType", ""))
+                asset = str(item.get("asset", "USDT"))
+                trade_id = str(item.get("tradeId", ""))
 
-            # Unique composite ID per income leg:
-            # Binance produces multiple records (e.g. REALIZED_PNL and COMMISSION) for the same tranId
-            unique_id = f"{tran_id}_{inc_type}"
-            if trade_id and trade_id != "None" and trade_id != "":
-                unique_id += f"_{trade_id}"
-            elif asset:
-                unique_id += f"_{asset}"
+                # Unique composite ID per income leg, isolated per account
+                prefix = f"acc{account_id}_" if account_id is not None else ""
+                unique_id = f"{prefix}{tran_id}_{inc_type}"
+                if trade_id and trade_id != "None" and trade_id != "":
+                    unique_id += f"_{trade_id}"
+                elif asset:
+                    unique_id += f"_{asset}"
 
-            if unique_id in seen_income_ids:
-                continue
-            seen_income_ids.add(unique_id)
+                if unique_id in seen_income_ids:
+                    continue
+                seen_income_ids.add(unique_id)
 
-            dt = datetime.utcfromtimestamp(item.get("time", 0) / 1000.0)
-            income_obj = IncomeItem(
-                id=unique_id,
-                tran_id=tran_id,
-                symbol=item.get("symbol") or "",
-                income_type=inc_type,
-                income=float(item.get("income", 0.0)),
-                asset=asset,
-                time=dt,
-                raw_timestamp=int(item.get("time", 0)),
-                is_demo=False
-            )
-            db.add(income_obj)
-            new_income_count += 1
+                dt = datetime.fromtimestamp(item.get("time", 0) / 1000.0, tz=timezone.utc)
+                income_obj = IncomeItem(
+                    id=unique_id,
+                    tran_id=tran_id,
+                    symbol=item.get("symbol") or "",
+                    income_type=inc_type,
+                    income=float(item.get("income", 0.0)),
+                    asset=asset,
+                    time=dt,
+                    raw_timestamp=int(item.get("time", 0)),
+                    is_demo=False,
+                    account_id=account_id
+                )
+                db.add(income_obj)
+                new_income_count += 1
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"Warning: Income sync error for window [{win_start}-{win_end}]: {e}")
 
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        print(f"Warning: Income sync error: {e}")
-
-    # 3. Fetch trade fills for traded symbols
-    # Discover every symbol actively traded or seen in income items + core defaults
-    top_defaults = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT"]
+    # 3. Discover all traded symbols from income history and defaults
+    top_defaults = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", "XRPUSDT"]
     income_symbols = set(item.get("symbol") for item in raw_income if item.get("symbol"))
     symbols_to_sync = sorted(list(set(top_defaults) | income_symbols))
 
+    # 4. Fetch trade execution fills across sliding windows
     new_fills_count = 0
-    existing_fill_ids: Set[str] = set(r[0] for r in db.query(RawFill.id).all())
+    existing_fill_ids_q = db.query(RawFill.id)
+    if account_id is not None:
+        existing_fill_ids_q = existing_fill_ids_q.filter(RawFill.account_id == account_id)
+    existing_fill_ids: Set[str] = set(r[0] for r in existing_fill_ids_q.all())
     seen_fill_ids: Set[str] = set(existing_fill_ids)
 
     for symbol in symbols_to_sync:
-        try:
-            fills = client.get_user_trades(symbol=symbol, limit=1000)
-            batch_count = 0
-            for f in fills:
-                fill_id = str(f.get("id"))
-                if fill_id in seen_fill_ids:
-                    continue
-                seen_fill_ids.add(fill_id)
+        for (win_start, win_end) in windows:
+            try:
+                fills = client.get_user_trades(symbol=symbol, start_time=win_start, end_time=win_end, limit=1000)
+                batch_count = 0
+                for f in fills:
+                    prefix = f"acc{account_id}_" if account_id is not None else ""
+                    fill_id = f"{prefix}{f.get('id')}"
+                    if fill_id in seen_fill_ids:
+                        continue
+                    seen_fill_ids.add(fill_id)
 
-                dt = datetime.utcfromtimestamp(f.get("time", 0) / 1000.0)
-                fill_obj = RawFill(
-                    id=fill_id,
-                    symbol=symbol,
-                    order_id=str(f.get("orderId")),
-                    side=f.get("side"),
-                    price=float(f.get("price", 0.0)),
-                    qty=float(f.get("qty", 0.0)),
-                    quote_qty=float(f.get("quoteQty", 0.0)),
-                    commission=float(f.get("commission", 0.0)),
-                    commission_asset=f.get("commissionAsset", "USDT"),
-                    realized_pnl=float(f.get("realizedPnl", 0.0)),
-                    time=dt,
-                    raw_timestamp=int(f.get("time", 0)),
-                    is_buyer=bool(f.get("buyer")),
-                    is_maker=bool(f.get("maker")),
-                    is_demo=False
-                )
-                db.add(fill_obj)
-                batch_count += 1
-                new_fills_count += 1
+                    dt = datetime.fromtimestamp(f.get("time", 0) / 1000.0, tz=timezone.utc)
+                    fill_obj = RawFill(
+                        id=fill_id,
+                        symbol=symbol,
+                        order_id=str(f.get("orderId")),
+                        side=f.get("side"),
+                        price=float(f.get("price", 0.0)),
+                        qty=float(f.get("qty", 0.0)),
+                        quote_qty=float(f.get("quoteQty", 0.0)),
+                        commission=float(f.get("commission", 0.0)),
+                        commission_asset=f.get("commissionAsset", "USDT"),
+                        realized_pnl=float(f.get("realizedPnl", 0.0)),
+                        time=dt,
+                        raw_timestamp=int(f.get("time", 0)),
+                        is_buyer=bool(f.get("buyer")),
+                        is_maker=bool(f.get("maker")),
+                        is_demo=False,
+                        account_id=account_id
+                    )
+                    db.add(fill_obj)
+                    batch_count += 1
+                    new_fills_count += 1
 
-            if batch_count > 0:
-                db.commit()
-        except Exception as e:
-            db.rollback()
-            print(f"Warning: Fills sync error for {ascii(symbol)}: {e}")
+                if batch_count > 0:
+                    db.commit()
+            except Exception as e:
+                db.rollback()
+                print(f"Warning: Fills sync error for {ascii(symbol)} in [{win_start}-{win_end}]: {e}")
 
-    # 4. Reconstruct round-trip trades from fills where realized_pnl != 0
-    reconstruct_roundtrip_trades(db, is_demo=False)
+    # 5. Reconstruct round-trip trades from fills where realized_pnl != 0
+    reconstruct_roundtrip_trades(db, is_demo=False, account_id=account_id)
 
     return {
         "status": "success",
         "balance": balance,
         "new_fills": new_fills_count,
         "new_income": new_income_count,
+        "lookback_days": lookback_days,
         "last_sync": config.last_sync_time.strftime("%Y-%m-%d %H:%M:%S UTC")
     }
 
-def reconstruct_roundtrip_trades(db: Session, is_demo: bool = False):
+def reconstruct_roundtrip_trades(db: Session, is_demo: bool = False, account_id: Optional[int] = None):
     """
     Reconstructs complete closed trades from raw execution fills.
     Matches closing fills (realizedPnl != 0) with their opening fills.
     """
-    closing_fills = db.query(RawFill).filter(
+    closing_fills_q = db.query(RawFill).filter(
         RawFill.is_demo == is_demo,
         RawFill.realized_pnl != 0.0
-    ).order_by(RawFill.time.asc()).all()
+    )
+    if account_id is not None:
+        closing_fills_q = closing_fills_q.filter(RawFill.account_id == account_id)
+    closing_fills = closing_fills_q.order_by(RawFill.time.asc()).all()
 
-    existing_trade_ids = set(r[0] for r in db.query(Trade.id).filter(Trade.is_demo == is_demo).all())
+    existing_trade_ids_q = db.query(Trade.id).filter(Trade.is_demo == is_demo)
+    if account_id is not None:
+        existing_trade_ids_q = existing_trade_ids_q.filter(Trade.account_id == account_id)
+    existing_trade_ids = set(r[0] for r in existing_trade_ids_q.all())
 
     reconstructed_count = 0
     for fill in closing_fills:
-        trade_id = f"real_tr_{fill.id}"
+        trade_id = f"acc{account_id}_tr_{fill.id}" if account_id is not None else f"real_tr_{fill.id}"
         if trade_id in existing_trade_ids:
             continue
         existing_trade_ids.add(trade_id)
@@ -167,12 +221,15 @@ def reconstruct_roundtrip_trades(db: Session, is_demo: bool = False):
 
         # Find opening fill candidates
         open_side = "SELL" if side == "SHORT" else "BUY"
-        opening_fill = db.query(RawFill).filter(
+        opening_fill_q = db.query(RawFill).filter(
             RawFill.symbol == fill.symbol,
             RawFill.side == open_side,
             RawFill.is_demo == is_demo,
             RawFill.time <= fill.time
-        ).order_by(RawFill.time.desc()).first()
+        )
+        if account_id is not None:
+            opening_fill_q = opening_fill_q.filter(RawFill.account_id == account_id)
+        opening_fill = opening_fill_q.order_by(RawFill.time.desc()).first()
 
         if opening_fill:
             entry_time = opening_fill.time
@@ -194,14 +251,16 @@ def reconstruct_roundtrip_trades(db: Session, is_demo: bool = False):
 
         # Query funding fees during this trade's duration
         funding_sum = 0.0
-        income_items = db.query(IncomeItem).filter(
+        income_items_q = db.query(IncomeItem).filter(
             IncomeItem.symbol == fill.symbol,
             IncomeItem.income_type == "FUNDING_FEE",
             IncomeItem.time >= entry_time,
             IncomeItem.time <= fill.time,
             IncomeItem.is_demo == is_demo
-        ).all()
-        for inc in income_items:
+        )
+        if account_id is not None:
+            income_items_q = income_items_q.filter(IncomeItem.account_id == account_id)
+        for inc in income_items_q.all():
             funding_sum += inc.income
 
         net_pnl = round(gross_pnl - commission + funding_sum, 4)
@@ -227,7 +286,8 @@ def reconstruct_roundtrip_trades(db: Session, is_demo: bool = False):
             behavioral_flags="",
             market_regime="Sideways",
             notes="Binance live synchronized trade",
-            is_demo=is_demo
+            is_demo=is_demo,
+            account_id=account_id
         )
         db.add(trade)
         reconstructed_count += 1

@@ -1,3 +1,16 @@
+export interface AccountItem {
+  id: number;
+  name: string;
+  api_key_masked: string;
+  is_connected: boolean;
+  is_active: boolean;
+  account_balance: number;
+  unrealized_pnl: number;
+  equity: number;
+  last_sync_time: string | null;
+  live_trades_count: number;
+}
+
 export interface AccountStatus {
   is_demo_mode: boolean;
   is_connected: boolean;
@@ -8,6 +21,9 @@ export interface AccountStatus {
   equity?: number;
   demo_trades_count: number;
   live_trades_count: number;
+  active_account_id?: number | null;
+  active_account_name?: string;
+  accounts?: AccountItem[];
 }
 
 export interface KPIs {
@@ -44,6 +60,8 @@ export interface OverviewData {
 
 export interface TradeItem {
   id: string;
+  account_id?: number;
+  account_name?: string;
   symbol: string;
   side: 'LONG' | 'SHORT';
   entry_time: string;
@@ -277,4 +295,28 @@ export interface FullReportData {
   strengths: string[];
   weaknesses: string[];
   actionable_improvements: string[];
+}
+
+export interface CandleItem {
+  time: number;
+  time_str: string;
+  date_str?: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface TradeChartData {
+  trade: TradeItem;
+  candles: CandleItem[];
+  entry_index: number;
+  exit_index: number;
+  interval: string;
+  source: 'binance' | 'simulated';
+  min_price: number;
+  max_price: number;
+  mfe: number;
+  mae: number;
 }

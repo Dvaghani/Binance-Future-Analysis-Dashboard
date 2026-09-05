@@ -14,7 +14,6 @@ import {
   RefreshCw,
   KeyRound,
   CheckCircle2,
-  Sparkles,
 } from 'lucide-react';
 import { useTrading } from '../../context/TradingContext';
 import { ThemeToggle } from '../common/ThemeToggle';
@@ -80,8 +79,8 @@ export const Sidebar: React.FC = () => {
       {/* Brand Header */}
       <div>
         <div className="h-16 flex items-center px-5 border-b border-slate-100 dark:border-slate-800/80 gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 dark:bg-emerald-950/80 dark:border dark:border-emerald-500/40 flex items-center justify-center text-white shadow-sm">
-            <Sparkles className="w-4 h-4 text-white dark:text-emerald-400" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden border border-emerald-500/30 dark:border-emerald-500/40 shadow-sm flex-shrink-0 bg-slate-900">
+            <img src="/logo.png" alt="Binance Futures Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <span className="font-semibold text-sm tracking-tight text-slate-900 dark:text-white block leading-tight">
@@ -162,7 +161,7 @@ export const Sidebar: React.FC = () => {
           </div>
 
           <button
-            onClick={syncNow}
+            onClick={() => syncNow()}
             disabled={isSyncing}
             className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border dark:border-slate-700/50 text-xs font-medium rounded transition disabled:opacity-50"
           >

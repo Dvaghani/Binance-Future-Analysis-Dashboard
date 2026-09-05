@@ -30,7 +30,7 @@ import { useTrading } from '../context/TradingContext';
 import { useTheme } from '../context/ThemeContext';
 
 export const OverviewPage: React.FC = () => {
-  const { setActiveTab } = useTrading();
+  const { setActiveTab, activeAccountId, status, dataRefreshKey } = useTrading();
   const { isDark } = useTheme();
   const [data, setData] = useState<OverviewData | null>(null);
   const [equityData, setEquityData] = useState<EquityPoint[]>([]);
@@ -40,11 +40,11 @@ export const OverviewPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [activeAccountId, status?.is_demo_mode, status?.last_sync_time, dataRefreshKey]);
 
   useEffect(() => {
     loadEquity();
-  }, [timeframe]);
+  }, [timeframe, activeAccountId, status?.is_demo_mode, status?.last_sync_time, dataRefreshKey]);
 
   const loadData = async () => {
     setLoading(true);

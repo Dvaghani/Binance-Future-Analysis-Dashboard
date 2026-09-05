@@ -5,6 +5,27 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, Index
 from backend.database.db import Base
 
+class Account(Base):
+    """
+    Connected Binance Futures account configurations.
+    Allows multiple live accounts (e.g. Main Account, Subaccount, Bot).
+    """
+    __tablename__ = "accounts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(64), nullable=False, default="Main Account")
+    api_key_masked = Column(String(64), nullable=True)
+    api_key_enc = Column(Text, nullable=True)
+    api_secret_enc = Column(Text, nullable=True)
+    is_connected = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=False)
+    account_balance = Column(Float, default=10000.0)
+    unrealized_pnl = Column(Float, default=0.0)
+    last_sync_time = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class AccountConfig(Base):
     __tablename__ = "account_config"
 
@@ -14,6 +35,7 @@ class AccountConfig(Base):
     api_secret_enc = Column(Text, nullable=True)
     is_connected = Column(Boolean, default=False)
     is_demo_mode = Column(Boolean, default=True)
+    active_account_id = Column(Integer, nullable=True)
     last_sync_time = Column(DateTime, nullable=True)
     account_balance = Column(Float, default=10000.0)
     unrealized_pnl = Column(Float, default=0.0)
@@ -52,10 +74,12 @@ class Trade(Base):
     market_regime = Column(String(32), default="Sideways") # Strong Bull, Bull, Sideways, Bear, Strong Bear, High Volatility
     notes = Column(Text, default="")
     is_demo = Column(Boolean, default=False, index=True)
+    account_id = Column(Integer, nullable=True, index=True)
 
     __table_args__ = (
         Index("ix_trades_exit_time_demo", "exit_time", "is_demo"),
         Index("ix_trades_symbol_demo", "symbol", "is_demo"),
+        Index("ix_trades_account_demo", "account_id", "is_demo"),
     )
 
 
@@ -81,6 +105,7 @@ class RawFill(Base):
     is_buyer = Column(Boolean, default=False)
     is_maker = Column(Boolean, default=False)
     is_demo = Column(Boolean, default=False)
+    account_id = Column(Integer, nullable=True, index=True)
 
 
 class IncomeItem(Base):
@@ -98,6 +123,7 @@ class IncomeItem(Base):
     time = Column(DateTime, nullable=False, index=True)
     raw_timestamp = Column(Integer, nullable=False)
     is_demo = Column(Boolean, default=False, index=True)
+    account_id = Column(Integer, nullable=True, index=True)
 
     __table_args__ = (
         Index("ix_income_items_symbol_type_time", "symbol", "income_type", "time"),

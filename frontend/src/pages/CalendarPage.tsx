@@ -8,10 +8,12 @@ import {
   TrendingDown,
   X,
   Loader2,
+  LineChart,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { CalendarDay, TradeItem } from '../types';
 import { formatPNL } from '../utils/format';
+import { TradeChartModal } from '../components/modals/TradeChartModal';
 
 export const CalendarPage: React.FC = () => {
   const [days, setDays] = useState<Record<string, CalendarDay>>({});
@@ -21,6 +23,7 @@ export const CalendarPage: React.FC = () => {
     trades: TradeItem[];
     loading?: boolean;
   } | null>(null);
+  const [chartTradeId, setChartTradeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -367,6 +370,18 @@ export const CalendarPage: React.FC = () => {
                           <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
                             {t.exit_time?.includes(' ') ? t.exit_time.split(' ')[1] : t.exit_time}
                           </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setChartTradeId(t.id);
+                            }}
+                            className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition shadow-xs"
+                            title="View trade on chart"
+                          >
+                            <LineChart className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                            Chart
+                          </button>
                         </div>
                       </div>
                     );
@@ -377,6 +392,9 @@ export const CalendarPage: React.FC = () => {
           </div>,
           document.body
         )}
+
+      {/* Trade Candlestick Chart Modal */}
+      <TradeChartModal tradeId={chartTradeId} onClose={() => setChartTradeId(null)} />
     </div>
   );
 };

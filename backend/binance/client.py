@@ -14,8 +14,10 @@ class BinanceFuturesClient:
 
     def __init__(self, api_key: str, api_secret: str):
         # Clean potential whitespace or accidental copy-paste quotes
-        self.api_key = api_key.strip().strip('"').strip("'")
-        self.api_secret = api_secret.strip().strip('"').strip("'")
+        self.api_key = (api_key or "").strip().strip('"').strip("'")
+        self.api_secret = (api_secret or "").strip().strip('"').strip("'")
+        if not self.api_key or not self.api_secret:
+            raise ValueError("Binance API Key and API Secret must not be empty.")
         self.time_offset = 0  # difference between local time and server time
         self._sync_time()
 

@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { ConnectionModal } from './components/modals/ConnectionModal';
+import { SyncGuideModal } from './components/modals/SyncGuideModal';
 
 import { OverviewPage } from './pages/OverviewPage';
 import { PerformancePage } from './pages/PerformancePage';
@@ -19,7 +20,14 @@ import { ReportsPage } from './pages/ReportsPage';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, notification, setNotification } = useTrading();
+  const {
+    activeTab,
+    activeAccountId,
+    status,
+    dataRefreshKey,
+    notification,
+    setNotification,
+  } = useTrading();
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -90,13 +98,19 @@ const MainLayout: React.FC = () => {
         )}
 
         {/* Dynamic Page View */}
-        <main className="flex-1 pb-16">
+        <main
+          className="flex-1 pb-16"
+          key={`${activeTab}-${activeAccountId}-${status?.is_demo_mode ? 'demo' : 'live'}-${status?.last_sync_time || ''}-${dataRefreshKey}`}
+        >
           {renderActiveTab()}
         </main>
       </div>
 
       {/* Binance Connection Modal */}
       <ConnectionModal />
+
+      {/* Binance Sync & History Guide Modal */}
+      <SyncGuideModal />
     </div>
   );
 };
