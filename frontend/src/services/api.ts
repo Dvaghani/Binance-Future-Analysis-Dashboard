@@ -14,7 +14,8 @@ import {
   CalendarDay,
   WinnerLoserStats,
   FullReportData,
-  TradeChartData
+  TradeChartData,
+  PositionsResponse
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -237,6 +238,8 @@ export const api = {
   getWinnerLoserStats: () => fetchJson<WinnerLoserStats>('/winner-loser'),
 
   getReport: () => fetchJson<FullReportData>('/reports'),
+
+  getPositions: () => fetchJson<PositionsResponse>('/positions'),
 
   resetDemo: () => fetchJson<{ status: string; count: number }>('/demo/reset', { method: 'POST' }),
 };

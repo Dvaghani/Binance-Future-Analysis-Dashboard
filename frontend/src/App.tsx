@@ -7,6 +7,7 @@ import { ConnectionModal } from './components/modals/ConnectionModal';
 import { SyncGuideModal } from './components/modals/SyncGuideModal';
 
 import { OverviewPage } from './pages/OverviewPage';
+import { PositionsPage } from './pages/PositionsPage';
 import { PerformancePage } from './pages/PerformancePage';
 import { TradesPage } from './pages/TradesPage';
 import { AssetsPage } from './pages/AssetsPage';
@@ -33,6 +34,8 @@ const MainLayout: React.FC = () => {
     switch (activeTab) {
       case 'overview':
         return <OverviewPage />;
+      case 'positions':
+        return <PositionsPage />;
       case 'performance':
         return <PerformancePage />;
       case 'trades':

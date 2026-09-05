@@ -94,7 +94,23 @@ export const PerformancePage: React.FC = () => {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1E293B' : '#E2E8F0'} />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }} tickLine={false} axisLine={false} />
+              <XAxis
+                dataKey="display_time"
+                tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }}
+                tickLine={false}
+                axisLine={false}
+                interval="preserveStartEnd"
+                minTickGap={timeframe === '1D' ? 35 : 45}
+                tickFormatter={(val: string, idx: number) => {
+                  if (timeframe === '1D') {
+                    return val;
+                  }
+                  if (idx > 0 && equityData[idx - 1]?.display_time === val) {
+                    return '';
+                  }
+                  return val;
+                }}
+              />
               <YAxis
                 yAxisId="equity"
                 domain={['auto', 'auto']}
@@ -109,7 +125,7 @@ export const PerformancePage: React.FC = () => {
                     const d = payload[0].payload;
                     return (
                       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-hover p-3 rounded-lg text-xs space-y-1">
-                        <div className="text-slate-400 dark:text-slate-500 font-medium">{d.timestamp}</div>
+                        <div className="text-slate-400 dark:text-slate-500 font-medium">{d.timestamp || d.date}</div>
                         <div className="font-bold text-slate-900 dark:text-white">
                           Equity: <span className="font-mono">${d.equity?.toFixed(2)}</span>
                         </div>
@@ -119,6 +135,14 @@ export const PerformancePage: React.FC = () => {
                         <div className="text-rose-500 dark:text-rose-400 font-mono text-[11px]">
                           Drawdown: {d.drawdown_pct > 0 ? `-${d.drawdown_pct?.toFixed(2)}%` : '0.00%'} (${d.drawdown?.toFixed(2)})
                         </div>
+                        {d.symbol && (
+                          <div className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <span>Trade: {d.symbol} {d.side}</span>
+                            <span className={d.net_pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}>
+                              {d.net_pnl >= 0 ? '+' : ''}${d.net_pnl?.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   }
@@ -134,6 +158,7 @@ export const PerformancePage: React.FC = () => {
                 fillOpacity={1}
                 fill="url(#pnlArea)"
                 isAnimationActive={false}
+                activeDot={{ r: 4, stroke: '#059669', strokeWidth: 2, fill: '#fff' }}
               />
             </ComposedChart>
           </ResponsiveContainer>

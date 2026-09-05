@@ -162,3 +162,40 @@ class BinanceFuturesClient:
         except Exception:
             pass
         return ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT"]
+
+    def get_position_risk(self, symbol: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Fetch active positions risk and liquidation parameters via GET /fapi/v2/positionRisk.
+        Filters out closed positions where positionAmt == 0.
+        """
+        params: Dict[str, Any] = {}
+        if symbol:
+            params["symbol"] = symbol
+        data = self._request("GET", "/fapi/v2/positionRisk", params)
+        if isinstance(data, list):
+            return [
+                p for p in data
+                if abs(float(p.get("positionAmt", 0.0))) > 1e-8
+            ]
+        return []
+
+    def get_premium_index(self, symbol: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Fetch current mark prices, funding rates, and next funding settlement times via GET /fapi/v1/premiumIndex.
+        This is a public Binance endpoint.
+        """
+        try:
+            url = f"{self.BASE_URL}/fapi/v1/premiumIndex"
+            params = {"symbol": symbol} if symbol else {}
+            with httpx.Client(timeout=8.0) as client:
+                res = client.get(url, params=params)
+                if res.status_code == 200:
+                    data = res.json()
+                    if isinstance(data, dict):
+                        return [data]
+                    if isinstance(data, list):
+                        return data
+        except Exception:
+            pass
+        return []
+

@@ -14,6 +14,7 @@ import {
   RefreshCw,
   KeyRound,
   CheckCircle2,
+  Radio,
 } from 'lucide-react';
 import { useTrading } from '../../context/TradingContext';
 import { ThemeToggle } from '../common/ThemeToggle';
@@ -27,6 +28,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'positions', label: 'Live Positions', icon: Radio, badge: 'LIVE' },
   { id: 'performance', label: 'Performance', icon: LineChart },
   { id: 'trades', label: 'Trade Journal', icon: History },
   { id: 'assets', label: 'Asset Breakdown', icon: Coins },

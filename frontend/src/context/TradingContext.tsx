@@ -71,7 +71,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeTab, setActiveTabState] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.replace('#', '');
-      const valid = ['overview', 'performance', 'trades', 'assets', 'long-short', 'time-analysis', 'behavior', 'risk', 'market', 'calendar', 'reports'];
+      const valid = ['overview', 'positions', 'performance', 'trades', 'assets', 'long-short', 'time-analysis', 'behavior', 'risk', 'market', 'calendar', 'reports'];
       if (valid.includes(hash)) return hash;
     }
     return 'overview';
@@ -87,7 +87,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      const valid = ['overview', 'performance', 'trades', 'assets', 'long-short', 'time-analysis', 'behavior', 'risk', 'market', 'calendar', 'reports'];
+      const valid = ['overview', 'positions', 'performance', 'trades', 'assets', 'long-short', 'time-analysis', 'behavior', 'risk', 'market', 'calendar', 'reports'];
       if (valid.includes(hash)) {
         setActiveTabState(hash);
       }

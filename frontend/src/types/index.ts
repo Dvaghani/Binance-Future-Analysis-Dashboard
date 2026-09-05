@@ -87,6 +87,8 @@ export interface TradeItem {
 export interface EquityPoint {
   timestamp: string;
   date: string;
+  time?: string;
+  display_time?: string;
   net_pnl: number;
   cumulative_pnl: number;
   equity: number;
@@ -320,3 +322,41 @@ export interface TradeChartData {
   mfe: number;
   mae: number;
 }
+
+export interface LivePositionItem {
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  position_amt: number;
+  entry_price: number;
+  mark_price: number;
+  liquidation_price: number;
+  liquidation_distance_pct: number | null;
+  risk_tier: 'Safe' | 'Moderate' | 'Elevated' | 'Critical';
+  leverage: number;
+  margin_type: 'cross' | 'isolated' | string;
+  margin_used: number;
+  position_value: number;
+  unrealized_pnl: number;
+  pnl_percentage: number;
+  funding_rate: number;
+  estimated_funding_fee: number;
+}
+
+export interface PositionsResponse {
+  is_demo_mode: boolean;
+  account_name: string;
+  account_equity: number;
+  account_balance: number;
+  positions_count: number;
+  total_exposure: number;
+  total_unrealized_pnl: number;
+  total_margin_used: number;
+  margin_utilization_pct: number;
+  highest_risk_tier: 'Safe' | 'Moderate' | 'Elevated' | 'Critical';
+  next_funding_time: string;
+  funding_countdown_seconds: number;
+  total_estimated_funding_fee: number;
+  positions: LivePositionItem[];
+  error?: string;
+}
+

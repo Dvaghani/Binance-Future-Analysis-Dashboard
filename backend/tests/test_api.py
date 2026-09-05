@@ -216,6 +216,38 @@ class TestApiEndpoints(unittest.TestCase):
         self.assertEqual(data["status"], "success")
         mock_sync.assert_called()
 
+    def test_positions_endpoint_demo(self):
+        # Ensure in demo mode
+        self.client.post("/api/mode/toggle", json={"is_demo_mode": True})
+
+        res = self.client.get("/api/positions")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get("is_demo_mode"))
+        self.assertIn("positions", data)
+        self.assertGreaterEqual(len(data["positions"]), 1)
+        self.assertIn("total_exposure", data)
+        self.assertIn("total_unrealized_pnl", data)
+        self.assertIn("margin_utilization_pct", data)
+        self.assertIn("highest_risk_tier", data)
+        self.assertIn("next_funding_time", data)
+        self.assertIn("funding_countdown_seconds", data)
+
+        pos = data["positions"][0]
+        self.assertIn("symbol", pos)
+        self.assertIn("side", pos)
+        self.assertIn("entry_price", pos)
+        self.assertIn("mark_price", pos)
+        self.assertIn("liquidation_price", pos)
+        self.assertIn("liquidation_distance_pct", pos)
+        self.assertIn("risk_tier", pos)
+        self.assertIn("leverage", pos)
+        self.assertIn("unrealized_pnl", pos)
+        self.assertIn("funding_rate", pos)
+        self.assertIn("estimated_funding_fee", pos)
+        self.assertIn(pos["risk_tier"], ["Safe", "Moderate", "Elevated", "Critical"])
+
 if __name__ == "__main__":
     unittest.main()
+
 

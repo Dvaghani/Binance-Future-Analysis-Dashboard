@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Sparkles,
   RefreshCw,
+  Radio,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -25,7 +27,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { api } from '../services/api';
-import { OverviewData, EquityPoint } from '../types';
+import { OverviewData, EquityPoint, PositionsResponse } from '../types';
 import { useTrading } from '../context/TradingContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -33,6 +35,7 @@ export const OverviewPage: React.FC = () => {
   const { setActiveTab, activeAccountId, status, dataRefreshKey } = useTrading();
   const { isDark } = useTheme();
   const [data, setData] = useState<OverviewData | null>(null);
+  const [positionsData, setPositionsData] = useState<PositionsResponse | null>(null);
   const [equityData, setEquityData] = useState<EquityPoint[]>([]);
   const [timeframe, setTimeframe] = useState<string>('30D');
   const [loading, setLoading] = useState(true);
@@ -50,8 +53,18 @@ export const OverviewPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.getOverview();
-      setData(res);
+      const [res, posRes] = await Promise.allSettled([
+        api.getOverview(),
+        api.getPositions(),
+      ]);
+      if (res.status === 'fulfilled') {
+        setData(res.value);
+      } else {
+        throw res.reason;
+      }
+      if (posRes.status === 'fulfilled') {
+        setPositionsData(posRes.value);
+      }
     } catch (e: any) {
       console.error(e);
       setError(e.message || 'Failed to load dashboard data.');
@@ -225,6 +238,51 @@ export const OverviewPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Live Positions Quick Radar Banner */}
+      {positionsData && positionsData.positions_count > 0 && (
+        <div
+          onClick={() => setActiveTab('positions')}
+          className="bg-white dark:bg-[#0E131F] p-4 rounded-xl border border-emerald-500/30 dark:border-emerald-500/40 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:border-emerald-500/60 transition group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
+              <Radio className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Live Liquidation Radar
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700/60">
+                  {positionsData.positions_count} ACTIVE {positionsData.positions_count === 1 ? 'POSITION' : 'POSITIONS'}
+                </span>
+                {positionsData.highest_risk_tier !== 'Safe' && (
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                    positionsData.highest_risk_tier === 'Critical'
+                      ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-700/60 animate-pulse'
+                      : 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700/60'
+                  }`}>
+                    {positionsData.highest_risk_tier.toUpperCase()} RISK DETECTED
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2.5">
+                <span>Exposure: <strong className="font-mono text-slate-700 dark:text-slate-300">${positionsData.total_exposure.toLocaleString()}</strong></span>
+                <span>•</span>
+                <span>Unrealized: <strong className={`font-mono ${positionsData.total_unrealized_pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{positionsData.total_unrealized_pnl >= 0 ? '+' : ''}${positionsData.total_unrealized_pnl.toFixed(2)}</strong></span>
+                <span>•</span>
+                <span>Next Funding in: <strong className="font-mono text-slate-700 dark:text-slate-300">{Math.floor(positionsData.funding_countdown_seconds / 3600)}h {Math.floor((positionsData.funding_countdown_seconds % 3600) / 60)}m</strong></span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform">
+            <span>Open Liquidation Radar</span>
+            <ChevronRight className="w-4 h-4" />
+          </div>
+        </div>
+      )}
+
       {/* Equity Curve Chart Section */}
       <div className="card-white p-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
@@ -261,7 +319,23 @@ export const OverviewPage: React.FC = () => {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1E293B' : '#E2E8F0'} />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }} tickLine={false} axisLine={false} />
+              <XAxis
+                dataKey="display_time"
+                tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }}
+                tickLine={false}
+                axisLine={false}
+                interval="preserveStartEnd"
+                minTickGap={timeframe === '1D' ? 35 : 45}
+                tickFormatter={(val: string, idx: number) => {
+                  if (timeframe === '1D') {
+                    return val;
+                  }
+                  if (idx > 0 && equityData[idx - 1]?.display_time === val) {
+                    return '';
+                  }
+                  return val;
+                }}
+              />
               <YAxis
                 domain={['auto', 'auto']}
                 tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }}
@@ -275,7 +349,7 @@ export const OverviewPage: React.FC = () => {
                     const d = payload[0].payload;
                     return (
                       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-hover p-3 rounded-lg text-xs space-y-1">
-                        <div className="text-slate-400 dark:text-slate-500 font-medium">{d.timestamp}</div>
+                        <div className="text-slate-400 dark:text-slate-500 font-medium">{d.timestamp || d.date}</div>
                         <div className="font-bold text-slate-900 dark:text-white">
                           Equity: <span className="font-mono">${d.equity?.toFixed(2)}</span>
                         </div>
@@ -289,6 +363,14 @@ export const OverviewPage: React.FC = () => {
                         <div className="text-rose-500 dark:text-rose-400 font-mono text-[11px]">
                           Drawdown: {d.drawdown_pct > 0 ? `-${d.drawdown_pct?.toFixed(2)}%` : '0.00%'} (${d.drawdown?.toFixed(2)})
                         </div>
+                        {d.symbol && (
+                          <div className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <span>Trade: {d.symbol} {d.side}</span>
+                            <span className={d.net_pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}>
+                              {d.net_pnl >= 0 ? '+' : ''}${d.net_pnl?.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   }
@@ -303,6 +385,7 @@ export const OverviewPage: React.FC = () => {
                 fillOpacity={1}
                 fill="url(#equityGrad)"
                 isAnimationActive={false}
+                activeDot={{ r: 4, stroke: '#059669', strokeWidth: 2, fill: '#fff' }}
               />
             </AreaChart>
           </ResponsiveContainer>

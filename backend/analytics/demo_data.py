@@ -225,7 +225,44 @@ def generate_demo_trades() -> List[Trade]:
 
         current_cursor += timedelta(days=1)
 
+    # Ensure active intra-day trades within the past 24 hours so 1D charts and live metrics have today's trades
+    recent_count = len([t for t in trades if t.exit_time >= now - timedelta(hours=24)])
+    if recent_count < 2:
+        recent_samples = [
+            ("ETHUSDT", "LONG", now - timedelta(hours=14, minutes=30), now - timedelta(hours=13, minutes=45), 3450.0, 3510.0, 0.65, 10, 39.0, 1.1, 0.0),
+            ("BTCUSDT", "SHORT", now - timedelta(hours=8, minutes=15), now - timedelta(hours=6, minutes=50), 64800.0, 64250.0, 0.04, 15, 22.0, 1.2, 0.0),
+            ("SOLUSDT", "LONG", now - timedelta(hours=2, minutes=40), now - timedelta(hours=1, minutes=55), 142.50, 144.20, 15.0, 20, 25.5, 0.8, 0.0),
+        ]
+        for sym, side, ent_t, ex_t, ent_p, ex_p, qty, lev, pnl, comm, fund in recent_samples:
+            pos_val = round(ent_p * qty, 2)
+            dur = int((ex_t - ent_t).total_seconds())
+            trades.append(Trade(
+                id=f"demo_tr_{trade_counter}",
+                symbol=sym,
+                side=side,
+                entry_time=ent_t,
+                exit_time=ex_t,
+                entry_price=ent_p,
+                exit_price=ex_p,
+                quantity=qty,
+                position_value=pos_val,
+                leverage=lev,
+                gross_pnl=pnl + comm,
+                pnl_percentage=round((pnl / (pos_val / lev)) * 100, 2),
+                commission=comm,
+                funding_fees=fund,
+                net_pnl=pnl,
+                duration_seconds=dur,
+                is_winner=(pnl > 0),
+                behavioral_flags="",
+                market_regime="Sideways",
+                notes="Clean execution",
+                is_demo=True
+            ))
+            trade_counter += 1
+
     return trades
+
 
 def generate_demo_income_items(trades: List[Trade]) -> List[IncomeItem]:
     items: List[IncomeItem] = []
@@ -275,3 +312,55 @@ def generate_demo_income_items(trades: List[Trade]) -> List[IncomeItem]:
             idx += 1
 
     return items
+
+
+def generate_demo_positions():
+    """
+    Generate calibrated demo open positions with realistic market risk parameters,
+    varied liquidation buffers (Safe, Moderate, Elevated), and live funding rates.
+    """
+    return [
+        {
+            "symbol": "BTCUSDT",
+            "positionAmt": "0.050",
+            "entryPrice": "64200.00",
+            "markPrice": "64850.00",
+            "unRealizedProfit": "32.50",
+            "liquidationPrice": "57450.00",
+            "leverage": "15",
+            "marginType": "cross",
+            "isolatedMargin": "0.0",
+            "positionSide": "BOTH",
+            "notional": "3242.50",
+            "lastFundingRate": "0.000100",  # +0.01%
+        },
+        {
+            "symbol": "ETHUSDT",
+            "positionAmt": "-0.750",
+            "entryPrice": "3480.00",
+            "markPrice": "3415.00",
+            "unRealizedProfit": "48.75",
+            "liquidationPrice": "3950.00",
+            "leverage": "10",
+            "marginType": "cross",
+            "isolatedMargin": "0.0",
+            "positionSide": "BOTH",
+            "notional": "2561.25",
+            "lastFundingRate": "0.000120",  # +0.012%
+        },
+        {
+            "symbol": "SOLUSDT",
+            "positionAmt": "12.000",
+            "entryPrice": "145.00",
+            "markPrice": "141.80",
+            "unRealizedProfit": "-38.40",
+            "liquidationPrice": "133.50",
+            "leverage": "20",
+            "marginType": "isolated",
+            "isolatedMargin": "85.08",
+            "positionSide": "BOTH",
+            "notional": "1701.60",
+            "lastFundingRate": "0.000080",  # +0.008%
+        }
+    ]
+

@@ -1,7 +1,7 @@
 """
 FastAPI REST API Routes for Binance Futures Trading Analysis.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -11,7 +11,7 @@ from backend.database.db import get_db
 from backend.database.models import Account, AccountConfig, Trade, RawFill, IncomeItem
 from backend.binance.client import BinanceFuturesClient
 from backend.binance.sync import sync_binance_data
-from backend.analytics.demo_data import generate_demo_trades, generate_demo_income_items
+from backend.analytics.demo_data import generate_demo_trades, generate_demo_income_items, generate_demo_positions
 from backend.analytics.engine import (
     calculate_kpis,
     calculate_equity_curve,
@@ -819,3 +819,181 @@ def reset_demo_data(db: Session = Depends(get_db)):
     db.commit()
 
     return {"status": "success", "count": len(trades)}
+
+
+def compute_funding_schedule():
+    now_utc = datetime.now(timezone.utc)
+    current_hour = now_utc.hour
+    next_funding_hour = ((current_hour // 8) + 1) * 8
+    if next_funding_hour >= 24:
+        next_dt = (now_utc + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    else:
+        next_dt = now_utc.replace(hour=next_funding_hour, minute=0, second=0, microsecond=0)
+    seconds_remaining = max(0, int((next_dt - now_utc).total_seconds()))
+    return next_dt.strftime("%Y-%m-%dT%H:%M:%SZ"), seconds_remaining
+
+
+@router.get("/positions")
+def get_open_positions_endpoint(db: Session = Depends(get_db)):
+    """
+    Real-time open positions, margin exposure, liquidation distance radar,
+    and 8-hour funding fee projections.
+    """
+    cfg = get_config(db)
+    active_acc = get_active_account(db, cfg)
+    acc_name = active_acc.name if active_acc else ("All Live Accounts" if cfg.active_account_id == 0 else "Main Account")
+    balance, unrealized, equity = get_account_financials(db, cfg, active_acc)
+
+    next_funding_iso, countdown_sec = compute_funding_schedule()
+    raw_positions = []
+    premium_map = {}
+
+    if cfg.is_demo_mode:
+        raw_positions = generate_demo_positions()
+        account_label = "Demo Simulation"
+    else:
+        account_label = acc_name
+        api_key = active_acc.api_key_enc if (active_acc and active_acc.api_key_enc) else cfg.api_key_enc
+        api_secret = active_acc.api_secret_enc if (active_acc and active_acc.api_secret_enc) else cfg.api_secret_enc
+
+        if not api_key or not api_secret:
+            raw_positions = []
+        else:
+            try:
+                client = BinanceFuturesClient(api_key, api_secret)
+                raw_positions = client.get_position_risk()
+                try:
+                    p_info = client.get_premium_index()
+                    for p in p_info:
+                        sym = p.get("symbol")
+                        if sym:
+                            premium_map[sym] = {
+                                "fundingRate": float(p.get("lastFundingRate", 0.0001)),
+                                "nextFundingTime": p.get("nextFundingTime")
+                            }
+                except Exception:
+                    pass
+            except Exception as e:
+                return {
+                    "is_demo_mode": False,
+                    "account_name": account_label,
+                    "account_equity": equity,
+                    "account_balance": balance,
+                    "positions_count": 0,
+                    "total_exposure": 0.0,
+                    "total_unrealized_pnl": 0.0,
+                    "total_margin_used": 0.0,
+                    "margin_utilization_pct": 0.0,
+                    "highest_risk_tier": "Safe",
+                    "next_funding_time": next_funding_iso,
+                    "funding_countdown_seconds": countdown_sec,
+                    "total_estimated_funding_fee": 0.0,
+                    "positions": [],
+                    "error": str(e)
+                }
+
+    formatted_positions = []
+    total_exposure = 0.0
+    total_margin_used = 0.0
+    total_unrealized = 0.0
+    total_funding_fee = 0.0
+    risk_rank = {"Critical": 4, "Elevated": 3, "Moderate": 2, "Safe": 1}
+    highest_rank = 1
+
+    for p in raw_positions:
+        amt = float(p.get("positionAmt", 0.0))
+        if abs(amt) < 1e-8:
+            continue
+
+        side = "LONG" if amt > 0 else "SHORT"
+        entry_price = float(p.get("entryPrice", 0.0))
+        mark_price = float(p.get("markPrice", 0.0)) or entry_price
+        liq_price = float(p.get("liquidationPrice", 0.0))
+        leverage = int(float(p.get("leverage", 10)))
+        margin_type = str(p.get("marginType", "cross")).lower()
+        pos_val = round(abs(amt) * mark_price, 2)
+        pos_unrealized = round(float(p.get("unRealizedProfit", 0.0)), 2)
+
+        iso_margin = float(p.get("isolatedMargin", 0.0))
+        margin_used = round(iso_margin if iso_margin > 0 else (pos_val / max(leverage, 1)), 2)
+        pnl_pct = round((pos_unrealized / max(margin_used, 1.0)) * 100.0, 2)
+
+        if liq_price > 0 and mark_price > 0:
+            liq_dist_pct = round(abs(mark_price - liq_price) / mark_price * 100.0, 2)
+        else:
+            liq_dist_pct = None
+
+        if liq_dist_pct is None or liq_price == 0:
+            risk_tier = "Safe"
+        elif liq_dist_pct <= 3.0:
+            risk_tier = "Critical"
+        elif liq_dist_pct <= 8.0:
+            risk_tier = "Elevated"
+        elif liq_dist_pct <= 15.0:
+            risk_tier = "Moderate"
+        else:
+            risk_tier = "Safe"
+
+        if risk_rank.get(risk_tier, 1) > highest_rank:
+            highest_rank = risk_rank.get(risk_tier, 1)
+
+        sym = p.get("symbol", "")
+        fund_rate = float(p.get("lastFundingRate", 0.0001))
+        if sym in premium_map:
+            fund_rate = premium_map[sym]["fundingRate"]
+            if premium_map[sym].get("nextFundingTime"):
+                ts_ms = premium_map[sym]["nextFundingTime"]
+                next_dt_live = datetime.fromtimestamp(ts_ms / 1000.0, timezone.utc)
+                next_funding_iso = next_dt_live.strftime("%Y-%m-%dT%H:%M:%SZ")
+                countdown_sec = max(0, int((next_dt_live - datetime.now(timezone.utc)).total_seconds()))
+
+        est_fee = -round(pos_val * fund_rate, 4) if side == "LONG" else round(pos_val * fund_rate, 4)
+
+        total_exposure += pos_val
+        total_margin_used += margin_used
+        total_unrealized += pos_unrealized
+        total_funding_fee += est_fee
+
+        formatted_positions.append({
+            "symbol": sym,
+            "side": side,
+            "position_amt": amt,
+            "entry_price": entry_price,
+            "mark_price": mark_price,
+            "liquidation_price": liq_price,
+            "liquidation_distance_pct": liq_dist_pct,
+            "risk_tier": risk_tier,
+            "leverage": leverage,
+            "margin_type": margin_type,
+            "margin_used": margin_used,
+            "position_value": pos_val,
+            "unrealized_pnl": pos_unrealized,
+            "pnl_percentage": pnl_pct,
+            "funding_rate": round(fund_rate, 6),
+            "estimated_funding_fee": est_fee
+        })
+
+    tier_order = {"Critical": 0, "Elevated": 1, "Moderate": 2, "Safe": 3}
+    formatted_positions.sort(key=lambda x: (tier_order.get(x["risk_tier"], 4), -x["position_value"]))
+
+    rank_to_tier = {4: "Critical", 3: "Elevated", 2: "Moderate", 1: "Safe"}
+    highest_risk_tier = rank_to_tier.get(highest_rank, "Safe")
+    margin_utilization = round((total_margin_used / max(equity, 1.0)) * 100.0, 2)
+
+    return {
+        "is_demo_mode": cfg.is_demo_mode,
+        "account_name": account_label,
+        "account_equity": round(equity, 2),
+        "account_balance": round(balance, 2),
+        "positions_count": len(formatted_positions),
+        "total_exposure": round(total_exposure, 2),
+        "total_unrealized_pnl": round(total_unrealized, 2),
+        "total_margin_used": round(total_margin_used, 2),
+        "margin_utilization_pct": margin_utilization,
+        "highest_risk_tier": highest_risk_tier,
+        "next_funding_time": next_funding_iso,
+        "funding_countdown_seconds": countdown_sec,
+        "total_estimated_funding_fee": round(total_funding_fee, 4),
+        "positions": formatted_positions
+    }
+
